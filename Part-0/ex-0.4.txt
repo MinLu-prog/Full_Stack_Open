@@ -1,0 +1,22 @@
+```mermaid
+sequenceDiagram
+    participant browser
+    participant server
+    
+    browser->>server : GET https://studies.cs.helsinki.fi/exampleapp/notes
+    activate server
+
+    Note right of browser : writes a note and 'Save'
+
+    browser ->>server : GET https://studies.cs.helsinki.fi/exampleapp/new_note
+    activate server
+    server -->> browser : {content: 'hello', date: '2025-12-29T17:27:01.132Z'}
+    server -->> browser : 302 redirect 
+    deactivate server
+
+    browser -->>server : GET https://studies.cs.helsinki.fi/exampleapp/notes
+    activate server
+    server -->> browser : Updated HTML
+    deactivate server
+    Note right of browser : browser rerender including the new line 
+```
