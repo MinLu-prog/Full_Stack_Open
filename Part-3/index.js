@@ -1,6 +1,4 @@
 const express = require('express')
-const cors = require('cors')
-app.use(cors())
 const app = express()  //express applicaton stored in app 
 app.use(express.json())
 let notes = [
