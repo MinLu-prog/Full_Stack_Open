@@ -2,6 +2,7 @@ import { StatisticsLine } from "./StatLine"
 
 export const Statistics = (props) => {
     if(props.good === 0 && props.neutral === 0 && props.bad === 0){
+        console.log(props);
         return(
             <div>
                 <h2>statistics</h2>
