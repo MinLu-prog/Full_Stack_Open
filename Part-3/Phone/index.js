@@ -2,50 +2,38 @@ const express = require('express')
 const app = express()
 app.use(express.json())
 const morgan = require('morgan')
+app.use(express.static('dist'))
+
+require('dotenv').config()
 morgan.token('content', function (req, res) { 
     return JSON.stringify(req.body) }
 )
+const Phone = require('./models/phone')
 //defining new token in morgan 
 //morgan.token('token name' , function(req,res) {
 // return something })
 
+
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :content' ))
-let persons = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-const generateId = () =>{
-    const maxId = persons.length > 0 ? (Math.max(...persons.map(person => Number(person.id)))) : 0
-    return String(maxId + 1 );
-}
 
 app.get('/api/persons',(request,response) => {
+    Phone.find({}).then(result => {
+      return  response.json(result)
+    })
 
-    response.json(persons)
 })
-
+const requestLogger = (request,response,next) =>{
+    console.log('Method' , request.method);
+    console.log('Body', request.body);
+    console.log('Path' , request.path);
+    console.log('____');
+    next()
+}
+app.use(requestLogger)
 
 
 app.get('/info',(request,response)=>{
-    const length = persons.length
+    const length = Phone.length
     const newDate = new Date();
     response.send(`<p>Phone book has the info for ${length} people </p>
         <br>
@@ -53,45 +41,61 @@ app.get('/info',(request,response)=>{
         `)
 })
 
-const checkMatch = (name) => {
-    return persons.some(p => p.name === name)
-}
 
-app.post('/api/persons',(request,response) =>{
+app.post('/api/persons',(request,response,next) =>{
         const body = request.body
-        const personObj ={
-            id : generateId(),
+        const personObj = new Phone({
+
             name : body.name || null,
             number : body.number || null,
-        }
-        if(checkMatch(body.name)){
-            response.status(404).json({
-                error : 'The name must be unique'
-            })
-        }else if( personObj.name == null || personObj.number == null){
-            response.send(`<h1>The name or number is required</h1>`)
-        }
-        else{
-            const newpersons = persons.concat(personObj)
-            response.json(newpersons)
-        }
+        })
+
+        personObj.save().then(
+            result => response.json(result)
+        ).catch(error => next(error))
+    
 })
 app.get('/api/persons/:id',(request,response)=>{
     const id = request.params.id
-    const person = persons.filter(p => p.id == id)
-    if(!person){
-        response.status(204).end()
-    }else{
-    response.json(person)
-    }
+    Phone.findById(id).then(result =>{
+        return   response.json(result)
+    })
 })
 
-app.get('/api/body',(request,response)=>{
-    const body = request.body
-    response.json(persons)
+
+app.delete('/api/persons/:id',(request,response,next) =>{
+    const id = request.params.id
+    Phone.findByIdAndDelete(id).then(
+      result =>  response.status(204).end()
+    ).catch(error => next(error))
 })
 
-const port = 3001
+app.put('/api/persons/:id',(request,response,next)=>{
+    const {name,number} = request.body
+    const id = request.params.id
+    Phone.findByIdAndUpdate(id ,{number},{new : true,runValidators : true}).then(
+        phone =>{
+            if(!phone){
+                return response.status(404).end()
+            }
+
+              return response.json(phone)
+    
+        }
+    ).catch(error => next(error))
+})
+
+const errorHandler = (error,request,response,next) => {
+    console.error(error.mnessage)
+         if (error.name === 'CastError') {
+     return response.status(400).send({ error: 'malformatted id' })
+  }
+  next()
+}
+
+app.use(errorHandler)
+const port = process.env.PORT
+
 app.listen(port ,() =>{
     console.log(`Port is connected to ${port}`);
 })

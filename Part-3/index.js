@@ -1,8 +1,8 @@
 const express = require('express')
-const cors = require('cors')
-app.use(cors())
 const app = express()  //express applicaton stored in app 
 app.use(express.json())
+app.use(express.static('dist'))
+
 let notes = [
   {
     id: "1",
@@ -21,21 +21,41 @@ let notes = [
   }
 ]
 
+
+// DO NOT SAVE YOUR PASSWORD TO GITHUB!!
+const Note = require('./models/note.js')
+const note = require('./models/note.js')
+
+app.get('/api/note', (request,response) =>{
+    Note.find({}).then(result => {
+      result.forEach(note =>{
+        response.json(note)
+        console.log(note);
+      })
+    })
+})
 app.get('/', (request,response) => {
     response.send('<h1>Hello World</h1>')
 })
-const generateId = () =>{
-  const maxID = notes.length > 0 ? Math.max(...notes.map(n => Number(n.id))) : 0
-  return String(maxID + 1)
-}
+app.get('/api/notes/:id', (request , response) => {
+    Note.findById(request.params.id).then(note => {
+      if(note){
+        response.json(note)
+      }
+      else{
+        response.status(404).end()
+      }
+    })
+    .catch(error => next(error))
+})
+
 app.post('/api/notes', (request, response) => {
   const body = request.body
 
-  const noteObj = {
-    id : generateId(),
+  const noteObj = new Note({
     content : body.content || null,
     important : body.important || false
-  }
+  })
   if(!body.content) {
     return response.status(404).json(
       {
@@ -43,10 +63,41 @@ app.post('/api/notes', (request, response) => {
       }
     )
   }
+  noteObj.save().then(Savednote =>
+    response.json(Savednote)
+  ).catch(error => next(error))
 
-  notes = notes.concat(noteObj)
-  response.json(notes)
+ 
 })
+app.use(express.static('dist'))
+
+
+app.delete('/api/notes/:id', (request,response,next) =>{
+  Note.findByIdAndDelete(request.params.id).then(
+    result =>{
+      response.send(204).end()
+    }
+  )
+  .catch(error => next(error))
+})
+
+app.put('/api/notes/:id',(request,response,next)=>{
+  const {content,important} = request.body
+  Note.findById(request.params.id).then(
+    note =>{
+        if(!note){
+          return response.status(404).end()
+        }
+          note.content =content
+          note.important = important
+        return note.save().then(result =>{
+          response.json(result)
+        })
+    }
+  ).catch(error => next(error))
+})
+
+
 //Event Handler function get function response to two parameters , request parameter contains all the information of the HTTP request and the second parameter defines how the request i responded to 
 
 //request ကို responsd တာက response.send နဲ့ respond 
@@ -59,6 +110,8 @@ app.post('/api/notes', (request, response) => {
 
 // })
 
+
+
 const requestlogger = (request ,response,next) =>{
   console.log('Method: ',request.method);
   console.log('Path: ',request.path);
@@ -66,6 +119,7 @@ const requestlogger = (request ,response,next) =>{
   console.log('___');
   next()
 }
+app.use(requestlogger)
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
@@ -73,8 +127,18 @@ const unknownEndpoint = (request, response) => {
 
 
 app.use(unknownEndpoint)
-app.use(requestlogger)
+
+
+const errorHandler = (error , request, response,next) =>{
+      console.error(error.message)
+      if (error.name === 'CastError') {
+     return response.status(400).send({ error: 'malformatted id' })
+  } 
+  
+}
+
+app.use(errorHandler)
 const PORT = process.env.PORT || 3001
-app.listen(port , ()=>{
+app.listen(PORT , ()=>{
   console.log(`Server running on Port ${PORT}`);
 })
