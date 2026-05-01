@@ -3,28 +3,9 @@ const app = express()  //express applicaton stored in app
 app.use(express.json())
 app.use(express.static('dist'))
 
-let notes = [
-  {
-    id: "1",
-    content: "HTML is easy",
-    important: true
-  },
-  {
-    id: "2",
-    content: "Browser can execute only JavaScript",
-    important: false
-  },
-  {
-    id: "3",
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true
-  }
-]
-
 
 // DO NOT SAVE YOUR PASSWORD TO GITHUB!!
 const Note = require('./models/note.js')
-const note = require('./models/note.js')
 
 app.get('/api/note', (request,response) =>{
     Note.find({}).then(result => {

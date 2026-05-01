@@ -59,3 +59,20 @@ console.log(totalAmount);
 // console.log(totalAmount);
 
 //reduced method 
+
+function hello(){
+    console.log("Hello world");
+}
+hello()
+
+var fun = function(){
+    console.log("Hello world");
+}
+var fun = undefined
+fun?.()
+//Object Creation
+
+let date = new Date().toLocaleDateString();
+console.log(date)
+
+//ပေါင်းနှုတ်မြှောက်စား or operator လို့‌ခေါ် 
